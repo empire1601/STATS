@@ -1,0 +1,121 @@
+#include "Resume/TAP/TAP.h"
+#include "qdebug.h"
+
+/*
+                                        TAP.cpp
+        Version 2.0
+            ->Affichage du tri à plat
+                ->Modalités
+                ->Effectifs
+                ->Fréquences
+                ->Fréquences cumulées
+            ->Chargement depuis la population
+
+*/
+
+////////////////////////////////////////////////////////////////////TAP\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+//->Cstr : Définition de la population
+TaP::TaP(POPULATION *pop, QWidget *parent) : POPULATION(parent,4,50)
+{
+    population=pop;
+    //id_courant=0;
+    setNomVar(0, "Modalités");
+    setNomVar(1, "Effectifs");
+    setTypeVar(1, TYPES::QUALITATIF_PURE);
+    setNomVar(2, "Fréquences");
+    setTypeVar(2, TYPES::QUALITATIF_PURE);
+    setNomVar(3, "Fréq. Cumulées");
+    setTypeVar(3, TYPES::QUALITATIF_PURE);
+    connect(population, SIGNAL(dataChanged(QModelIndex,QModelIndex)), this, SLOT(MAJ(QModelIndex,QModelIndex)));
+    if(rowCount()>1)
+    {
+        removeRows(0,rowCount());
+    }
+    setData(0,0,"TOTAL");
+    setData(2,0, "1,00");
+    var_courante=0;
+}
+//->TAP::headerData : donnes les entêtes des lignes ou colonnes
+QVariant TaP::headerData(int section, Qt::Orientation orientation, int role) const
+{
+    if(orientation == Qt::Horizontal)
+    {
+        return POPULATION::headerData(section, orientation, role);
+    }
+    else
+    {return QVariant("");}
+}
+//SLOT:setVar : changement de l'id de la variable et traçage du Tri à plat
+void TaP::setVar(QIntList id)
+{
+    //On prend la première variable si plusieurs sont sélectionnées
+    var_courante=this->population->pVar(id.at(0));
+    this->setNom(var_courante->Nom());
+    this->typeVar=var_courante->Type();
+
+        while(columnCount()>3)
+        {removeColumn(columnCount()-1);}
+
+        if(rowCount()>0)
+        {
+            removeRows(0,rowCount());
+        }
+        setNomVar(0, "Modalités");
+        setNomVar(1, "Effectifs");
+        setNomVar(2, "Fréquences");
+
+        TAP_DONNEES donnees;
+        donnees.Charger(var_courante);
+
+        switch(typeVar)
+        {
+            case TYPES::QUALITATIF_ORDINAL:
+                addColumn();
+                setNomVar(3, "Fréquences Cumulées");
+                setTypeVar(3, TYPES::QUALITATIF_PURE);
+                break;
+            case TYPES::QUANTITATIF_DISCRET:
+                addColumn();
+                setNomVar(3, "Fréquences Cumulées");
+                setTypeVar(3, TYPES::QUALITATIF_PURE);
+                break;
+            case TYPES::QUANTITATIF_CONTINU_PURE:
+                addColumn();
+                setNomVar(3, "Fréquences Cumulées");
+                setTypeVar(3, TYPES::QUALITATIF_PURE);
+                break;
+        }
+        for(int i=0; i<donnees.Modalites().size();i++)
+        {
+            if(i==rowCount())
+            {
+                addRows();
+            }
+            setData(0, i, donnees.Modalites().at(i));
+            setData(1, i, donnees.Effectifs().at(i));
+            setData(2, i, donnees.Frequences().at(i));
+            if(donnees.FrequencesCumulees().size())
+            {setData(3,i, donnees.FrequencesCumulees().at(i));}
+        }
+        addRows();
+        setData(0,rowCount()-1,"TOTAL");
+        setData(1,rowCount()-1,population->NbValideString(id.at(0)));
+        setData(2,rowCount()-1,"1,00");
+}
+int TaP::TypeVar()
+{
+    return typeVar;
+}
+ResumMulti *TaP::Distribution(ResumMulti *older)
+{
+    //On efface l'ancienne distribution
+    if(older)
+    {delete older;}
+    //Chargement de la nouvelle distribution
+    int nb=this->NbValide(0);
+    for(int i=0;i<nb;i++)
+    {
+
+    }
+}
+
